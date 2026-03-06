@@ -224,10 +224,9 @@ const shuffleArray = (array) => {
 
 const getAllProducts = async (req, res) => {
   try {
-    const { subcat, mode } = req.query;
+    const { subcat } = req.query;
     const where = {};
     if (subcat) where.subcat = subcat;
-    if (mode) where.productfor = mode;
 
     const products = await Product.findAll({ where });
     res.status(200).json(shuffleArray(products));
