@@ -10,29 +10,14 @@ AssignOrder.init(
     payment_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: 'Payments', // References the Payments table
-        key: 'id', // Payment ID in the Payments table
-      },
-      onDelete: 'CASCADE', // If a Payment is deleted, remove related assignments
     },
     shopper_id: {
       type: DataTypes.BIGINT.UNSIGNED,
       allowNull: false,
-      references: {
-        model: 'shoppers', // References the shoppers table
-        key: 'id', // Shopper ID in the shoppers table
-      },
-      onDelete: 'SET NULL', // Set to NULL if the Shopper is deleted
     },
     delivery_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: 'delivery_boys', // References the delivery_boys table
-        key: 'id', // Delivery Boy ID in the delivery_boys table
-      },
-      onDelete: 'SET NULL', // Set to NULL if the Delivery Boy is deleted
     },
     status: {
       type: DataTypes.STRING,
