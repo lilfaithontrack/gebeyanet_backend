@@ -43,7 +43,7 @@ const Checkout = sequelize.define('Checkout', {
     validate: {
       isFloat: true, // Ensures that the price is a float number
       notEmpty: true, // Prevent empty price
-      min: 500, // Ensures that the price is not negative
+      min: 1, // Minimum order of 1 birr
     },
   },
   payment_status: {
@@ -61,10 +61,6 @@ const Checkout = sequelize.define('Checkout', {
   guest_id: {
     type: DataTypes.STRING,
     allowNull: true, // Nullable for logged-in users
-    unique: true, // Ensure guest IDs are unique
-    validate: {
-      isUUID: 4, // Validate it is a UUIDv4
-    },
   },
 }, {
   timestamps: true, // Automatically manage createdAt and updatedAt
