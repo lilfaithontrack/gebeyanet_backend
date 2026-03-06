@@ -47,6 +47,7 @@ const Payment = require('./models/Payment.js');
 const DeliveryBoy = require('./models/DeliveryBoy.js');
 const Shopper = require('./models/Shopper.js');
 const AssignOrder = require('./models/AssignOrder.js');
+const Notification = require('./models/Notification.js');
 
 dotenv.config();
 
@@ -171,7 +172,7 @@ const startServer = async () => {
     await connectDB();
 
     // Associate models
-    const models = { Category, Subcategory, Payment, Shop, ShopOwner, Shopper, DeliveryBoy, AssignOrder };
+    const models = { Category, Subcategory, Payment, Shop, ShopOwner, Shopper, DeliveryBoy, AssignOrder, Notification };
     Object.keys(models).forEach((modelName) => {
       if (models[modelName].associate) {
         models[modelName].associate(models);

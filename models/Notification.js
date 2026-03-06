@@ -19,10 +19,6 @@ const Notification = sequelize.define(
     },
     user_id: {
       type: DataTypes.INTEGER,
-      references: {
-        model: 'Users', // Links to the Users table
-        key: 'id',
-      },
       allowNull: true, // Nullable in case of guest notifications
     },
     guest_id: {
