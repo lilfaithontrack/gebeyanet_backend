@@ -1,0 +1,24 @@
+{
+  "development": {
+    "username": "yenieshw_kaleb",
+    "password": "kalebeyasu",
+    "database": "yenieshw_yeniesuq",
+    "host": "92.204.209.21",
+    "dialect": "mysql"
+  },
+  "test": {
+    "username": "yenieshw_kaleb",
+    "password": "kalebeyasu",
+    "database": "yenieshw_yeniesuq",
+    "host": "92.204.209.21",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "yenieshw_kaleb",
+    "password": "kalebeyasu",
+    "database": "yenieshw_yeniesuq",
+    "host": "92.204.209.21",
+    "dialect": "mysql"
+  }
+}
+
