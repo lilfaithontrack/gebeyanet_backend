@@ -157,17 +157,7 @@ UOM.belongsTo(AddProduct, { foreignKey: 'product_id', as: 'product' });
 User.hasMany(AddProduct, { foreignKey: 'seller_id', as: 'products' });
 AddProduct.belongsTo(User, { foreignKey: 'seller_id', as: 'seller' });
 
-// User ↔ AssignOrder
-User.hasMany(AssignOrder, { foreignKey: 'shopper_id', as: 'assignOrders' });
-AssignOrder.belongsTo(User, { foreignKey: 'shopper_id', as: 'shopper' });
-
-// Payment ↔ AssignOrder
-Payment.hasOne(AssignOrder, { foreignKey: 'payment_id', as: 'payment' });
-AssignOrder.belongsTo(Payment, { foreignKey: 'payment_id', as: 'payment' });
-
-// DeliveryBoy ↔ AssignOrder
-DeliveryBoy.hasMany(AssignOrder, { foreignKey: 'delivery_id', as: 'assignOrders' });
-AssignOrder.belongsTo(DeliveryBoy, { foreignKey: 'delivery_id', as: 'deliveryBoy' });
+// AssignOrder associations are defined in AssignOrder.associate() method
 
 // Payment ↔ User
 Payment.belongsTo(User, { foreignKey: 'shopper_id' });
