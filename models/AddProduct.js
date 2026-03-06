@@ -180,11 +180,6 @@ const Product = sequelize.define('Product', {
       this.setDataValue('variations', JSON.stringify(value));
     }
   },
-  productfor: {
-    type: DataTypes.ENUM('for_seller', 'for_user'),
-    allowNull: false,
-    defaultValue: 'for_user',
-  },
   status: {
     type: DataTypes.ENUM('pending', 'approved', 'rejected'),
     allowNull: false,
