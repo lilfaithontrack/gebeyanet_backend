@@ -15,6 +15,14 @@ const Product = sequelize.define('Product', {
       len: [2, 255]
     }
   },
+  color: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
+  size: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
   price: {
     type: DataTypes.FLOAT,
     allowNull: false,
@@ -57,10 +65,14 @@ const Product = sequelize.define('Product', {
   seller_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    references: { model: 'users', key: 'id' },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
     comment: 'The user (role=seller or buyer) who owns this product',
+  },
+  seller_email: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    validate: {
+      isEmail: true
+    }
   },
 
   // --- Purchase Limits ---
@@ -82,6 +94,14 @@ const Product = sequelize.define('Product', {
     allowNull: false,
     defaultValue: 'piece',
     comment: 'Unit of sale for this product',
+  },
+  unit_of_measurement: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+  },
+  sku: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
   },
 
   image: {
@@ -201,6 +221,14 @@ const Product = sequelize.define('Product', {
         validated['Addis Ababa'] = 'in_stock';
       }
       this.setDataValue('location_stock', validated);
+    }
+  },
+  location_type: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: 'region',
+    validate: {
+      isIn: [['region', 'coordinates', 'hybrid']]
     }
   },
   location_name: {
