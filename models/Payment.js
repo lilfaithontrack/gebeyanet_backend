@@ -19,7 +19,7 @@ const Payment = sequelize.define(
       defaultValue: 'Pending',
     },
     cart_items: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       allowNull: false,
     },
     total_price: {
@@ -78,7 +78,7 @@ const Payment = sequelize.define(
 
     // 🆕 Shopper IDs (assigned)
     shopper_ids: {
-      type: DataTypes.JSONB,
+      type: DataTypes.JSON,
       allowNull: true,
     },
 

@@ -57,8 +57,6 @@ const seedConfig = async () => {
     console.error('Error seeding DeliveryFeeSetting:', err);
   }
 };
-seedConfig();
-
 // ---------- 2. HELPERS ----------
 function calculateDistanceKm(lat1, lon1, lat2, lon2) {
   const toRad = deg => (deg * Math.PI) / 180;
@@ -151,4 +149,4 @@ router.put('/update-fee-config', async (req, res) => {
   }
 });
 
-module.exports = { DeliveryFeeSetting, router };
+module.exports = { DeliveryFeeSetting, router, seedConfig };

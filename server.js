@@ -32,6 +32,7 @@ const checkoutRoutes = require('./routes/checkoutRoutes.js');
 const receiptRoutes = require('./routes/receiptRoutes.js');
 const notificationRoutes = require('./routes/notificationRoutes.js');
 const deliveryFeeRoutes = require('./routes/deliveryFeeRoutes.js');
+const { seedConfig } = require('./controllers/deliveryFeeModelAndController.js');
 const paymentRoutes = require('./routes/paymentRoutes.js');
 
 // --- Model Imports (for associations) ---
@@ -189,6 +190,9 @@ const startServer = async () => {
     // Sync database models
     await sequelize.sync({ alter: false });
     console.log('Database synchronized successfully.');
+
+    // Seed delivery fee config after tables are created
+    await seedConfig();
 
     // SSL configuration
     const privKeyPath = '/etc/letsencrypt/live/backend.gebyanet.com/privkey.pem';
