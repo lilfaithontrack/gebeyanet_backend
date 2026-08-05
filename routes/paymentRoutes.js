@@ -1,5 +1,6 @@
 const express = require('express');
-const { createPayment, updatePaymentStatus, sendOrderToShopperAndDelivery, getOrderHistory, getOrdersByReferralCode, getAllOrders, getPaymentOrderById, assignOrderToNearbyDeliveries, getAvailableOrders, acceptDeliveryOrder } = require('../controllers/paymentController.js');
+const { createPayment, updatePaymentStatus, sendOrderToShopperAndDelivery, getOrderHistory, getOrdersByReferralCode, getAllOrders, getPaymentOrderById, assignOrderToNearbyDeliveries, getAvailableOrders, acceptDeliveryOrder, cancelOrder } = require('../controllers/paymentController.js');
+const { verifyUser } = require('../middlewares/verifyUser.js');
 
 
 const router = express.Router();
@@ -14,20 +15,22 @@ router.get('/available', getAvailableOrders);
 // Route to fetch order history by customer_email or guest_id
 router.get('/orders/history', getOrderHistory);
 router.get(
-  '/orders/by-referral/:referral_code_from_param', 
+  '/orders/by-referral/:referral_code_from_param',
   // protect, // General authentication
   // authorizeAgent, // Middleware to check if user is an agent and matches the referral code
   getOrdersByReferralCode
 );
 // Route to fetch all orders
 router.get('/orders', getAllOrders);
-//route to fetch the payment order based on the id 
+//route to fetch the payment order based on the id
 router.get('/orders/:payment_id', getPaymentOrderById);
 router.post('/assign-nearby/:payment_id', assignOrderToNearbyDeliveries);
 
 // 2. Delivery user accepts the order
 router.post('/accept/:payment_id', acceptDeliveryOrder);
 
+// Cancel an order (owner only — auth or guest_id query param)
+router.put('/cancel/:payment_id', verifyUser, cancelOrder);
 
 // Route to send order to shopper and delivery (approve and assign)
 router.put('/:payment_id/send-order', sendOrderToShopperAndDelivery);

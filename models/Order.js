@@ -7,17 +7,21 @@ const Order = sequelize.define('Order', {
     primaryKey: true,
     autoIncrement: true,
   },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
   username: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   address: {
     type: DataTypes.TEXT,
-    allowNull: false,
+    allowNull: true,
   },
   region: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   title: {
     type: DataTypes.STRING,
@@ -33,23 +37,23 @@ const Order = sequelize.define('Order', {
   },
   quantity: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
   },
   payment: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   file_uploaded: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   total_price: {
     type: DataTypes.FLOAT,
-    allowNull: false,
+    allowNull: true,
   },
   shipment: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   service_payment: {
     type: DataTypes.FLOAT,
@@ -57,7 +61,7 @@ const Order = sequelize.define('Order', {
   },
   total_pay: {
     type: DataTypes.FLOAT,
-    allowNull: false,
+    allowNull: true,
   },
   ordered_at: {
     type: DataTypes.DATE,
@@ -67,9 +71,14 @@ const Order = sequelize.define('Order', {
     type: DataTypes.ENUM('pending', 'completed', 'canceled'),
     defaultValue: 'pending',
   },
+  payment_status: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: 'pending',
+  },
   price: {
     type: DataTypes.FLOAT,
-    allowNull: false,
+    allowNull: true,
   },
   is_read: {
     type: DataTypes.BOOLEAN,
@@ -77,23 +86,23 @@ const Order = sequelize.define('Order', {
   },
   liyu_name: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   sub_city: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   national_id: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   deliveryman: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   due_date: {
     type: DataTypes.DATE,
-    allowNull: false,
+    allowNull: true,
   },
 }, {
   timestamps: false,

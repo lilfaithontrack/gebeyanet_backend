@@ -44,7 +44,7 @@ const getNotifications = async (req, res) => {
 
     const notifications = await Notification.findAll({
       where: whereClause,
-      order: [['createdAt', 'DESC']], // Sort by newest first
+      order: [['created_at', 'DESC']], // Sort by newest first
     });
 
     if (notifications.length === 0) {
@@ -89,4 +89,71 @@ const updateNotificationStatus = async (req, res) => {
   }
 };
 
-module.exports = { createNotification, getNotifications, updateNotificationStatus };
+// ============================
+//  AUTHENTICATED: Get my notifications
+// ============================
+const getMyNotifications = async (req, res) => {
+  try {
+    const notifications = await Notification.findAll({
+      where: { user_id: req.user.id },
+      order: [['created_at', 'DESC']],
+    });
+
+    res.status(200).json({
+      success: true,
+      notifications,
+    });
+  } catch (error) {
+    console.error('Error fetching my notifications:', error);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+// ============================
+//  AUTHENTICATED: Mark one of my notifications as read
+// ============================
+const markMyNotificationRead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const notification = await Notification.findOne({
+      where: { id, user_id: req.user.id },
+    });
+
+    if (!notification) {
+      return res.status(404).json({ success: false, message: 'Notification not found.' });
+    }
+
+    await notification.update({ status: 'read' });
+
+    res.status(200).json({ success: true, message: 'Marked as read.', notification });
+  } catch (error) {
+    console.error('Error marking notification read:', error);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+// ============================
+//  AUTHENTICATED: Mark all my notifications as read
+// ============================
+const markAllMyNotificationsRead = async (req, res) => {
+  try {
+    await Notification.update(
+      { status: 'read' },
+      { where: { user_id: req.user.id, status: 'unread' } }
+    );
+
+    res.status(200).json({ success: true, message: 'All notifications marked as read.' });
+  } catch (error) {
+    console.error('Error marking all notifications read:', error);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+module.exports = {
+  createNotification,
+  getNotifications,
+  updateNotificationStatus,
+  getMyNotifications,
+  markMyNotificationRead,
+  markAllMyNotificationsRead,
+};

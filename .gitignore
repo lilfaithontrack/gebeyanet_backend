@@ -1,2 +1,12 @@
 node_modules
 .env
+
+# Large archives / dumps - do not commit
+*.zip
+*.sql
+
+# Scratch / inspection scripts (prefixed with _)
+_*.js
+
+# Uploads (runtime user content)
+uploads/screenshots/

@@ -187,15 +187,22 @@ const getAssignedOrdersForDeliveryBoy = async (req, res) => {
   }
 };
 
-// Assign a shopper and delivery boy to an order
+// Assign a shopper and/or delivery boy to an order
 const assignOrder = async (req, res) => {
   const { payment_id, shopper_id, delivery_id } = req.body;
 
-  // Validation
-  if (!payment_id || !shopper_id || !delivery_id) {
+  // Validation — only payment_id is required; shopper_id and delivery_id are independent
+  if (!payment_id) {
     return res.status(400).json({
       success: false,
-      message: 'Missing required fields: payment_id, shopper_id, or delivery_id.',
+      message: 'Missing required field: payment_id.',
+    });
+  }
+
+  if (!shopper_id && !delivery_id) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please select at least a shopper or a delivery boy.',
     });
   }
 
@@ -209,20 +216,34 @@ const assignOrder = async (req, res) => {
       });
     }
 
-    // Create or update assignment
-    const [assignOrder, created] = await AssignOrder.upsert({
+    // Build the assignment data — only include fields that are provided
+    const assignmentData = {
       payment_id,
-      shopper_id,
-      delivery_id,
       status: 'Assigned',
       assigned_at: new Date(),
-    });
+    };
+    if (shopper_id) assignmentData.shopper_id = shopper_id;
+    if (delivery_id) assignmentData.delivery_id = delivery_id;
+
+    // Check if an assignment already exists for this payment
+    const existing = await AssignOrder.findOne({ where: { payment_id } });
+
+    let assignOrder;
+    if (existing) {
+      // Update only the provided fields, keep the others as-is
+      if (shopper_id) existing.shopper_id = shopper_id;
+      if (delivery_id) existing.delivery_id = delivery_id;
+      existing.status = 'Assigned';
+      existing.assigned_at = new Date();
+      await existing.save();
+      assignOrder = existing;
+    } else {
+      assignOrder = await AssignOrder.create(assignmentData);
+    }
 
     res.status(200).json({
       success: true,
-      message: created
-        ? 'Order assigned successfully.'
-        : 'Order assignment updated successfully.',
+      message: 'Order assigned successfully.',
       data: assignOrder,
     });
   } catch (error) {
@@ -244,7 +265,7 @@ const getAssignedOrderByPaymentId = async (req, res) => {
       include: [
         { model: Shopper, as: 'shopper', attributes: ['id', 'full_name'] },
         { model: DeliveryBoy, as: 'deliveryBoy', attributes: ['id', 'full_name'] },
-        { model: Payment, attributes: ['id', 'payment_status', 'total_price'] },
+        { model: Payment, as: 'payment', attributes: ['id', 'payment_status', 'total_price'] },
       ],
     });
 

@@ -2,6 +2,7 @@ const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../db/dbConnect.js'); // Import your Sequelize instance
 const Shopper = require('./Shopper.js');
 const DeliveryBoy = require('./DeliveryBoy.js');
+const Payment = require('./Payment.js');
 
 class AssignOrder extends Model {}
 
@@ -13,11 +14,11 @@ AssignOrder.init(
     },
     shopper_id: {
       type: DataTypes.BIGINT.UNSIGNED,
-      allowNull: false,
+      allowNull: true,
     },
     delivery_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
     },
     status: {
       type: DataTypes.STRING,
@@ -47,6 +48,11 @@ AssignOrder.associate = (models) => {
   AssignOrder.belongsTo(models.DeliveryBoy, {
     foreignKey: 'delivery_id',
     as: 'deliveryBoy',
+  });
+
+  AssignOrder.belongsTo(models.Payment || Payment, {
+    foreignKey: 'payment_id',
+    as: 'payment',
   });
 };
 

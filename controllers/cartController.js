@@ -3,10 +3,10 @@ const Cart = require('../models/Cart.js'); // Adjust the path if necessary
 
 // Add a new item to the cart
 const addItemToCart = async (req, res) => {
-  const { title, image, price } = req.body;
+  const { title, image, price, userId } = req.body;
 
   try {
-    const newItem = await Cart.create({ title, image, price });
+    const newItem = await Cart.create({ title, image, price, userId: userId || null });
     res.status(201).json({
       success: true,
       message: 'Item added to cart successfully.',

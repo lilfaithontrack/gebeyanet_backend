@@ -5,6 +5,14 @@ const multer = require('multer');
 const sharp = require('sharp');
 const fs = require('fs/promises');
 
+// Allowed product types per seller level
+const ALLOWED_PRODUCT_TYPES = {
+  importer:  ['import', 'wholesale', 'retail'],
+  exporter:  ['export', 'wholesale', 'retail'],
+  reseller:  ['retail', 'wholesale'],
+  admin:     ['retail', 'wholesale', 'import', 'export'],
+};
+
 /**
  * =================================================================================
  * API USAGE GUIDE (IMPORTANT FOR FRONTEND)
@@ -45,6 +53,7 @@ const createProduct = async (req, res) => {
   try {
     const {
       title, price, description, brand, catItems, subcat, productfor, stock,
+      product_type, origin_country, destination_country,
       variations: variationsJSON,
       color_options: colorOptionsJSON,
       general_image_count,
@@ -52,12 +61,38 @@ const createProduct = async (req, res) => {
       min_order_qty, max_order_qty, sell_unit,
     } = req.body;
 
+    // Validate product_type against seller_level
+    const sellerLevel = req.user?.seller_level || 'admin';
+    const type = product_type || 'retail';
+
+    if (!ALLOWED_PRODUCT_TYPES[sellerLevel]?.includes(type)) {
+      return res.status(403).json({
+        message: `Seller level '${sellerLevel}' cannot create '${type}' products.`,
+      });
+    }
+
+    // Validate import/export specific fields
+    if (type === 'import' && !origin_country) {
+      return res.status(400).json({ message: 'origin_country is required for import products.' });
+    }
+    if (type === 'export' && !destination_country) {
+      return res.status(400).json({ message: 'destination_country is required for export products.' });
+    }
+
     // 1. Process and sort uploaded images
     const allNewImagePaths = await processUploadedImages(req.files);
     const generalImageCount = parseInt(general_image_count, 10) || 0;
 
     const generalImages = allNewImagePaths.slice(0, generalImageCount);
-    let color_options_data = colorOptionsJSON ? JSON.parse(colorOptionsJSON) : [];
+    // Allow both JSON string (multipart) and already-parsed object/array (JSON body)
+    const safeParse = (val, fallback) => {
+      if (val === undefined || val === null) return fallback;
+      if (typeof val === 'string') { try { return JSON.parse(val); } catch { return fallback; } }
+      return val;
+    };
+    let color_options_data = safeParse(colorOptionsJSON, []);
+    let variations = safeParse(variationsJSON, []);
+    let geoData = safeParse(coordinatesJSON, null);
 
     let currentIndex = generalImageCount;
     color_options_data.forEach(option => {
@@ -66,17 +101,19 @@ const createProduct = async (req, res) => {
       currentIndex += imageCountForColor;
     });
 
-    // 2. Parse other JSON fields
-    const variations = variationsJSON ? JSON.parse(variationsJSON) : [];
-    let geoData = coordinatesJSON ? JSON.parse(coordinatesJSON) : null;
     if (geoData && geoData.lat && geoData.lng) {
       geoData = { type: 'Point', coordinates: [geoData.lng, geoData.lat] };
     }
 
-    // 3. Create product with seller_id and purchase limits
+    // 3. Create product with seller_id, seller_level, product_type, and purchase limits
     const product = await Product.create({
       title, price, description, brand, catItems, subcat, productfor, stock,
+      product_type: type,
+      origin_country: type === 'import' ? origin_country : null,
+      destination_country: type === 'export' ? destination_country : null,
       seller_id: req.user ? req.user.id : req.body.seller_id,
+      seller_email: req.user ? req.user.email : req.body.seller_email,
+      seller_level: sellerLevel,
       min_order_qty: min_order_qty || 1,
       max_order_qty: max_order_qty || null,
       sell_unit: sell_unit || 'piece',
@@ -114,6 +151,13 @@ const updateProduct = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    // Allow both JSON string (multipart) and already-parsed object/array (JSON body)
+    const safeParse = (val, fallback) => {
+      if (val === undefined || val === null) return fallback;
+      if (typeof val === 'string') { try { return JSON.parse(val); } catch { return fallback; } }
+      return val;
+    };
+
     // FIX: Ensure data from the database is an array before using array methods.
     // This prevents a crash if a product has null for image or color_options.
     const productImages = Array.isArray(product.image) ? product.image : [];
@@ -127,7 +171,7 @@ const updateProduct = async (req, res) => {
       ...productColorOptions.flatMap(opt => (Array.isArray(opt.images) ? opt.images : []))
     ];
 
-    const existingImagesToKeep = existingImagesJSON ? JSON.parse(existingImagesJSON) : [];
+    const existingImagesToKeep = safeParse(existingImagesJSON, []);
     const imagesToDelete = oldImages.filter(img => !existingImagesToKeep.includes(img));
 
     // Only delete if there are images to delete
@@ -147,12 +191,9 @@ const updateProduct = async (req, res) => {
       const newGeneralImages = newImagePaths.slice(0, generalImageCount);
       const newColorImages = newImagePaths.slice(generalImageCount);
 
-      // You've correctly parsed this from the request
-      let color_options_data = colorOptionsJSON ? JSON.parse(colorOptionsJSON) : [];
+      let color_options_data = safeParse(colorOptionsJSON, []);
       let colorImageIndex = 0;
 
-      // This logic looks complex and might need review, but we'll assume it's correct for now.
-      // It correctly uses the parsed color_options_data.
       color_options_data.forEach(option => {
         const imageCountForColor = option.image_count || 0;
         option.images = newColorImages.slice(colorImageIndex, colorImageIndex + imageCountForColor);
@@ -160,20 +201,19 @@ const updateProduct = async (req, res) => {
       });
 
       // Combine kept images with new ones
-      // FIX: Use the sanitized 'productImages' variable here as well.
       updateFields.image = [...existingImagesToKeep.filter(img => productImages.includes(img)), ...newGeneralImages];
       updateFields.color_options = color_options_data;
 
-    } else if (colorOptionsJSON) {
+    } else if (colorOptionsJSON !== undefined) {
       // If no new images, just update the text metadata
-      updateFields.color_options = JSON.parse(colorOptionsJSON);
+      updateFields.color_options = safeParse(colorOptionsJSON, productColorOptions);
     }
 
-    if (variationsJSON) {
-      updateFields.variations = JSON.parse(variationsJSON);
+    if (variationsJSON !== undefined) {
+      updateFields.variations = safeParse(variationsJSON, []);
     }
-    if (coordinatesJSON) {
-      const geoData = JSON.parse(coordinatesJSON);
+    if (coordinatesJSON !== undefined) {
+      const geoData = safeParse(coordinatesJSON, null);
       if (geoData && geoData.lat && geoData.lng) {
         updateFields.coordinates = { type: 'Point', coordinates: [geoData.lng, geoData.lat] };
       }
@@ -197,11 +237,15 @@ const deleteProduct = async (req, res) => {
       return res.status(404).json({ message: 'Product not found.' });
     }
 
+    const productImages = Array.isArray(product.image) ? product.image : [];
+    const productColorOptions = Array.isArray(product.color_options) ? product.color_options : [];
     const imagesToDelete = [
-      ...product.image,
-      ...product.color_options.flatMap(option => option.images)
+      ...productImages,
+      ...productColorOptions.flatMap(option => (Array.isArray(option.images) ? option.images : []))
     ];
-    await deleteUploadedImages(imagesToDelete);
+    if (imagesToDelete.length > 0) {
+      await deleteUploadedImages(imagesToDelete);
+    }
 
     await product.destroy();
     res.status(200).json({ message: 'Product deleted successfully!' });
@@ -224,9 +268,19 @@ const shuffleArray = (array) => {
 
 const getAllProducts = async (req, res) => {
   try {
-    const { subcat } = req.query;
+    const { subcat, product_type, seller_level, status } = req.query;
     const where = {};
+
     if (subcat) where.subcat = subcat;
+    if (product_type) where.product_type = product_type;
+    if (seller_level) where.seller_level = seller_level;
+
+    // Default to approved only (for public browsing), but allow status filter
+    if (status) {
+      where.status = status;
+    } else {
+      where.status = 'approved';
+    }
 
     const products = await Product.findAll({ where });
     res.status(200).json(shuffleArray(products));
@@ -318,4 +372,60 @@ async function deleteUploadedImages(imagePaths) {
   await Promise.all(deletePromises);
 }
 
-module.exports = { upload, createProduct, updateProduct, deleteProduct, getAllProducts, getProductById, getProductsByLocation };
+// Get products by the authenticated seller (for seller dashboard)
+const getMyProducts = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const where = { seller_id: req.user.id };
+
+    if (status) {
+      where.status = status;
+    }
+
+    const products = await Product.findAll({
+      where,
+      order: [['created_at', 'DESC']],
+    });
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.error('Error fetching my products:', error);
+    res.status(500).json({ message: 'Failed to fetch products.' });
+  }
+};
+
+// ============================
+//  ADMIN: Update product status (approve / reject / pending)
+// ============================
+const updateProductStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: "Invalid status. Must be 'pending', 'approved', or 'rejected'." });
+    }
+
+    const product = await Product.findByPk(id);
+    if (!product) return res.status(404).json({ message: 'Product not found.' });
+
+    await product.update({ status });
+
+    res.status(200).json({ message: 'Product status updated successfully.', product });
+  } catch (error) {
+    console.error('Error updating product status:', error);
+    res.status(500).json({ message: 'Failed to update product status.' });
+  }
+};
+
+module.exports = {
+  upload,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  getAllProducts,
+  getProductById,
+  getProductsByLocation,
+  getMyProducts,
+  updateProductStatus,
+};

@@ -5,10 +5,14 @@ const path = require('path');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const User = require('../models/User.js');
+const Payment = require('../models/Payment.js');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const JWT_EXPIRES_IN = '1y';
 const SALT_ROUNDS = 10;
+
+// Valid seller levels and their allowed product types
+const VALID_SELLER_LEVELS = ['importer', 'exporter', 'reseller'];
 
 // --- Multer setup for profile/license uploads ---
 const storage = multer.diskStorage({
@@ -33,15 +37,26 @@ const otpStore = {};
 // ============================
 const registerUser = async (req, res) => {
   try {
-    const { full_name, email, phone, password, role, location_lat, location_lng, address, is_company } = req.body;
+    const { full_name, email, phone, password, role, seller_level, location_lat, location_lng, address, is_company, referred_by } = req.body;
 
     if (!full_name || !email || !password) {
       return res.status(400).json({ success: false, message: 'full_name, email, and password are required.' });
     }
 
     // Validate role
-    const validRoles = ['buyer', 'seller', 'agent'];
+    const validRoles = ['buyer', 'seller'];
     const userRole = validRoles.includes(role) ? role : 'buyer';
+
+    // Validate seller_level if role is seller
+    if (userRole === 'seller') {
+      if (!VALID_SELLER_LEVELS.includes(seller_level)) {
+        return res.status(400).json({ success: false, message: 'Valid seller_level is required: importer, exporter, or reseller.' });
+      }
+      // Importers and exporters require a license file
+      if (['importer', 'exporter'].includes(seller_level) && !req.files?.license_file?.[0]) {
+        return res.status(400).json({ success: false, message: 'License file is required for importers and exporters.' });
+      }
+    }
 
     // Check if email already exists
     const existing = await User.findOne({ where: { email } });
@@ -60,10 +75,16 @@ const registerUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-    // Generate referral code for agents
-    let referral_code = null;
-    if (userRole === 'agent' || req.body.is_agent) {
-      referral_code = `GN-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    // Generate referral code for ALL users (not just agents)
+    const referral_code = `GN-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+
+    // Validate referred_by — look up by referral_code
+    let referrerId = null;
+    if (referred_by) {
+      const referrer = await User.findOne({ where: { referral_code: referred_by } });
+      if (referrer) {
+        referrerId = referrer.id;
+      }
     }
 
     const newUser = await User.create({
@@ -72,13 +93,14 @@ const registerUser = async (req, res) => {
       phone: phone || null,
       password: hashedPassword,
       role: userRole,
+      seller_level: userRole === 'seller' ? seller_level : null,
       location_lat: location_lat || null,
       location_lng: location_lng || null,
       address: address || null,
       is_company: is_company || false,
-      is_agent: userRole === 'agent',
+      is_referrer: true,
       referral_code,
-      referred_by: req.body.referred_by || null,
+      referred_by: referrerId,
       image: req.files?.image?.[0]?.filename || null,
       license_file: req.files?.license_file?.[0]?.filename || null,
       bank_name: req.body.bank_name || null,
@@ -179,7 +201,7 @@ const updateProfile = async (req, res) => {
     const updates = {};
     const allowedFields = [
       'full_name', 'phone', 'location_lat', 'location_lng', 'address',
-      'bank_name', 'account_number', 'is_company',
+      'bank_name', 'account_number', 'is_company', 'seller_level',
     ];
 
     allowedFields.forEach(field => {
@@ -375,14 +397,243 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// ============================
+//  UPGRADE TO SELLER
+// ============================
+const upgradeToSeller = async (req, res) => {
+  try {
+    const { seller_level } = req.body;
+
+    if (!VALID_SELLER_LEVELS.includes(seller_level)) {
+      return res.status(400).json({ success: false, message: 'Valid seller_level is required: importer, exporter, or reseller.' });
+    }
+
+    // Importers and exporters require a license file
+    if (['importer', 'exporter'].includes(seller_level) && !req.files?.license_file?.[0]) {
+      return res.status(400).json({ success: false, message: 'License file is required for importers and exporters.' });
+    }
+
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    if (user.role === 'seller') {
+      return res.status(400).json({ success: false, message: 'You are already a seller.' });
+    }
+
+    const updates = {
+      role: 'seller',
+      seller_level,
+      status: ['importer', 'exporter'].includes(seller_level) ? 'pending' : 'active',
+    };
+
+    if (req.files?.license_file?.[0]) {
+      updates.license_file = req.files.license_file[0].filename;
+    }
+
+    await user.update(updates);
+
+    const { password: _, ...userData } = user.toJSON();
+
+    res.status(200).json({
+      success: true,
+      message: 'Upgraded to seller successfully.',
+      user: userData,
+    });
+  } catch (error) {
+    console.error('Error upgrading to seller:', error);
+    res.status(500).json({ success: false, message: 'Internal server error.', error: error.message });
+  }
+};
+
+// ============================
+//  ADMIN: UPDATE USER STATUS
+// ============================
+const updateUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ['active', 'pending', 'suspended', 'inactive'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+    }
+
+    const user = await User.findByPk(id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    await user.update({ status });
+
+    const { password: _, ...userData } = user.toJSON();
+    res.status(200).json({ success: true, message: 'User status updated.', user: userData });
+  } catch (error) {
+    console.error('Error updating user status:', error);
+    res.status(500).json({ success: false, message: 'Internal server error.', error: error.message });
+  }
+};
+
+// ============================
+//  ADMIN: UPDATE USER (general)
+// ============================
+const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findByPk(id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    const allowedFields = [
+      'full_name', 'phone', 'role', 'seller_level', 'status',
+      'bank_name', 'account_number', 'is_company', 'is_referrer',
+      'wallet_balance', 'referral_earnings',
+    ];
+
+    const updates = {};
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    });
+
+    await user.update(updates);
+
+    const { password: _, ...userData } = user.toJSON();
+    res.status(200).json({ success: true, message: 'User updated.', user: userData });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ success: false, message: 'Internal server error.', error: error.message });
+  }
+};
+
+// ============================
+//  ADMIN: REFERRAL STATS (platform-wide)
+// ============================
+const getAdminReferralStats = async (req, res) => {
+  try {
+    // All users who have a referral code
+    const allUsers = await User.findAll({
+      attributes: ['id', 'full_name', 'email', 'role', 'seller_level', 'referral_code', 'wallet_balance', 'referral_earnings', 'is_company', 'status'],
+      where: { referral_code: { [require('sequelize').Op.ne]: null } },
+      order: [['referral_earnings', 'DESC']],
+    });
+
+    // Count referred users per referrer
+    const referredCounts = await User.findAll({
+      attributes: [
+        'referred_by',
+        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'referred_count'],
+      ],
+      where: { referred_by: { [require('sequelize').Op.ne]: null } },
+      group: ['referred_by'],
+      raw: true,
+    });
+
+    const countMap = {};
+    referredCounts.forEach(r => {
+      countMap[r.referred_by] = parseInt(r.referred_count, 10);
+    });
+
+    // Enrich each referrer with their referred count
+    const referrers = allUsers.map(u => ({
+      id: u.id,
+      full_name: u.full_name,
+      email: u.email,
+      role: u.role,
+      seller_level: u.seller_level,
+      referral_code: u.referral_code,
+      wallet_balance: parseFloat(u.wallet_balance) || 0,
+      referral_earnings: parseFloat(u.referral_earnings) || 0,
+      is_company: u.is_company,
+      status: u.status,
+      referred_count: countMap[u.id] || 0,
+    }));
+
+    const totalReferrers = referrers.filter(r => r.referred_count > 0).length;
+    const totalReferred = Object.values(countMap).reduce((a, b) => a + b, 0);
+    const totalPayouts = referrers.reduce((sum, r) => sum + r.referral_earnings, 0);
+
+    // Total referral orders (payments with a referral_code)
+    const totalReferralOrders = await Payment.count({
+      where: { referral_code: { [require('sequelize').Op.ne]: null } },
+    });
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        total_referrers: totalReferrers,
+        total_referred_users: totalReferred,
+        total_referral_orders: totalReferralOrders,
+        total_payouts: totalPayouts,
+      },
+      referrers,
+    });
+  } catch (error) {
+    console.error('Error fetching admin referral stats:', error);
+    res.status(500).json({ success: false, message: 'Internal server error.', error: error.message });
+  }
+};
+
+// ============================
+//  GET REFERRAL STATS
+// ============================
+const getReferralStats = async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Get users referred by this user
+    const referredUsers = await User.findAll({
+      where: { referred_by: user.id },
+      attributes: ['id', 'full_name', 'email', 'role', 'seller_level', 'status', 'created_at'],
+      order: [['created_at', 'DESC']],
+    });
+
+    // Get orders that used this user's referral code
+    const referredOrders = await Payment.findAll({
+      where: { referral_code: user.referral_code },
+      order: [['createdAt', 'DESC']],
+    });
+
+    // Calculate total earnings (5 ETB for individuals, 10 for companies per approved/completed order)
+    const bonusPerOrder = user.is_company ? 10 : 5;
+    const totalEarnings = referredOrders
+      .filter(o => ['Approved', 'Completed'].includes(o.payment_status))
+      .reduce((sum) => sum + bonusPerOrder, 0);
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        referral_code: user.referral_code,
+        referral_link: `https://gebyanet.com/ref/${user.referral_code}`,
+        total_referred: referredUsers.length,
+        total_orders: referredOrders.length,
+        total_earnings: totalEarnings,
+        referral_earnings: parseFloat(user.referral_earnings) || 0,
+        wallet_balance: parseFloat(user.wallet_balance) || 0,
+        referred_users: referredUsers,
+        referred_orders: referredOrders.map(o => ({
+          id: o.id,
+          customer_name: o.customer_name,
+          total_price: o.total_price,
+          payment_status: o.payment_status,
+          created_at: o.createdAt,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching referral stats:', error);
+    res.status(500).json({ success: false, message: 'Internal server error.', error: error.message });
+  }
+};
+
 module.exports = {
   upload,
   registerUser,
   loginUser,
   getProfile,
   updateProfile,
+  upgradeToSeller,
+  getReferralStats,
+  getAdminReferralStats,
   getUserById,
   getAllUsers,
+  updateUser,
+  updateUserStatus,
   deleteUser,
   sendOtp,
   verifyOtp,

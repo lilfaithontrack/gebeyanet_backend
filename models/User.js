@@ -10,10 +10,17 @@ const User = sequelize.define('User', {
 
   // --- Role ---
   role: {
-    type: DataTypes.ENUM('buyer', 'seller', 'agent'),
+    type: DataTypes.ENUM('buyer', 'seller'),
     allowNull: false,
     defaultValue: 'buyer',
-    comment: 'Determines the user type: buyer (shopper), seller, or agent',
+    comment: 'Determines the user type: buyer or seller',
+  },
+
+  // --- Seller Level (only relevant when role='seller') ---
+  seller_level: {
+    type: DataTypes.ENUM('importer', 'exporter', 'reseller'),
+    allowNull: true,
+    comment: 'Seller sub-level: importer, exporter, or reseller (null for buyers)',
   },
 
   // --- Core Identity ---
@@ -80,13 +87,19 @@ const User = sequelize.define('User', {
     defaultValue: 0.00,
     allowNull: false,
   },
-
-  // --- Agent / Referral ---
-  is_agent: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
+  referral_earnings: {
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0.00,
     allowNull: false,
-    comment: 'Whether this user is also an agent',
+    comment: 'Total earnings from referral bonuses',
+  },
+
+  // --- Referral (available to ALL users) ---
+  is_referrer: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    allowNull: false,
+    comment: 'Whether this user can refer others (true for everyone)',
   },
   referral_code: {
     type: DataTypes.STRING,

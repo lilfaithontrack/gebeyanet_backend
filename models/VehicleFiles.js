@@ -9,27 +9,27 @@ const VehicleFiles = sequelize.define('VehicleFiles', {
   },
 
   // Required Photos
-  car_photo: { 
-    type: DataTypes.STRING, 
-    allowNull: false 
+  car_photo: {
+    type: DataTypes.STRING,
+    allowNull: true
   },
-  car_license_photo: { 
-    type: DataTypes.STRING, 
-    allowNull: false 
+  car_license_photo: {
+    type: DataTypes.STRING,
+    allowNull: true
   },
-  commercial_license: { 
-    type: DataTypes.STRING, 
-    allowNull: true 
+  commercial_license: {
+    type: DataTypes.STRING,
+    allowNull: true
   },
-  owner_id_photo: { 
-    type: DataTypes.STRING, 
-    allowNull: false 
+  owner_id_photo: {
+    type: DataTypes.STRING,
+    allowNull: true
   },
 
   // Uploaded filled document (Word/PDF)
-  filled_document: { 
+  filled_document: {
     type: DataTypes.STRING,  // file path or URL
-    allowNull: false 
+    allowNull: true
   },
 
   // Optional: version of the template used

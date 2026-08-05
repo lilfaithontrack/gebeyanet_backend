@@ -4,10 +4,10 @@ const { registerShop, getAllShops, getShopById, updateShop, deleteShop, findNear
 const router = express.Router();
 
 router.post('/register', registerShop);
+router.get('/nearby', findNearbyShops); // Specific routes must come before /:id
 router.get('/', getAllShops);
 router.get('/:id', getShopById);
 router.put('/:id', updateShop);
 router.delete('/:id', deleteShop);
-router.get('/nearby', findNearbyShops);
 
 module.exports = router;

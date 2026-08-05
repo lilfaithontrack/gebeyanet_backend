@@ -28,6 +28,7 @@ const withdrawRoutes = require('./routes/withdraw.js');
 const cartRoutes = require('./routes/cartRoutes.js');
 const orderRoutes = require('./routes/orderRoutes.js');
 const ShopperPaymentRoutes = require('./routes/ShoperPaymentRoutes.js');
+const shopperRoutes = require('./routes/shopperRoutes.js');
 const checkoutRoutes = require('./routes/checkoutRoutes.js');
 const receiptRoutes = require('./routes/receiptRoutes.js');
 const notificationRoutes = require('./routes/notificationRoutes.js');
@@ -48,6 +49,7 @@ const DeliveryBoy = require('./models/DeliveryBoy.js');
 const Shopper = require('./models/Shopper.js');
 const AssignOrder = require('./models/AssignOrder.js');
 const Notification = require('./models/Notification.js');
+const WithdrawRequest = require('./models/WithdrawRequest.js');
 
 dotenv.config();
 
@@ -61,17 +63,23 @@ app.use(compression());
 app.use(cors({
   origin: [
     'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:4173',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:4173',
     'https://mobapp.gebyanet.com',
+    'https://admin.gebyanet.com',
     'https://test.piazdelivery.com',
     'https://shop.piazdelivery.com',
-    'http://localhost:5173',
     'https://mobapp.piazdelivery.com',
     'https://piazdelivery.com',
     'https://mobadmin.piazdelivery.com',
     'https://deliveryapp.piazdelivery.com',
     'https://shopper.piazdelivery.com',
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   credentials: true,
 }));
 app.use(morgan('dev'));
@@ -108,6 +116,8 @@ app.use('/api/order', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/receipt', receiptRoutes);
 app.use('/api/shopper/payment-accounts', ShopperPaymentRoutes);
+app.use('/api/shopper', shopperRoutes);       // Shopper CRUD + login + nearby
+app.use('/api/shoppers', shopperRoutes);      // Alias for admin panel compatibility
 
 // --- Delivery ---
 app.use('/api/delivery', deliveryRoutes);
@@ -163,6 +173,10 @@ AddProduct.belongsTo(User, { foreignKey: 'seller_id', as: 'seller' });
 // Payment ↔ User
 Payment.belongsTo(User, { foreignKey: 'shopper_id' });
 User.hasMany(Payment, { foreignKey: 'shopper_id' });
+
+// WithdrawRequest ↔ User
+WithdrawRequest.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+User.hasMany(WithdrawRequest, { foreignKey: 'user_id', as: 'withdrawals' });
 
 // ========================
 //  START SERVER

@@ -47,7 +47,7 @@ const uploadFiles = multer({ storage, fileFilter }).fields([
 const createVehicleFiles = async (req, res) => {
   try {
     const { template_version } = req.body;
-    const files = req.files;
+    const files = req.files || {};
 
     const vehicleFiles = await VehicleFiles.create({
       car_photo: files.car_photo ? files.car_photo[0].path : null,
@@ -90,7 +90,7 @@ const getVehicleFileById = async (req, res) => {
 const updateVehicleFiles = async (req, res) => {
   try {
     const { id } = req.params;
-    const files = req.files;
+    const files = req.files || {};
     const existing = await VehicleFiles.findByPk(id);
 
     if (!existing) return res.status(404).json({ error: 'Record not found' });

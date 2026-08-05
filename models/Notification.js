@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../db/dbConnect.js');
 
 const Notification = sequelize.define(
-  'Notification',
+  'UserNotification', // model name kept distinct from Telalaki.js 'Notification' to avoid duplicate define()
   {
     title: {
       type: DataTypes.STRING,
@@ -31,8 +31,10 @@ const Notification = sequelize.define(
     },
   },
   {
-    tableName: 'Notifications',
+    tableName: 'user_notifications',
     timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
   }
 );
 

@@ -9,15 +9,19 @@ const Cart = sequelize.define('Cart', {
   },
   title: {
     type: DataTypes.TEXT,
-    allowNull: false,
+    allowNull: true,
   },
   image: {
     type: DataTypes.TEXT,
-    allowNull: false,
+    allowNull: true,
   },
   price: {
     type: DataTypes.TEXT,
-    allowNull: false,
+    allowNull: true,
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
   },
 }, {
   timestamps: false,

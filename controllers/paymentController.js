@@ -91,8 +91,8 @@ const updatePaymentStatus = async (req, res) => {
     payment.payment_status = payment_status;
     await payment.save();
 
-    // 💰 Handle referral bonus on completed status
-    if (payment_status === 'Completed' && previousStatus !== 'Completed') {
+    // 💰 Handle referral bonus on Approved or Completed status
+    if (['Approved', 'Completed'].includes(payment_status) && !['Approved', 'Completed'].includes(previousStatus)) {
       if (payment.referral_code) {
         const referrer = await User.findOne({ where: { referral_code: payment.referral_code } });
         if (referrer) {
@@ -102,13 +102,15 @@ const updatePaymentStatus = async (req, res) => {
           await referrer.save();
           console.log(`Referrer ${referrer.id} rewarded with ${bonusAmount} ETB.`);
 
-          // 🎯 2nd Gen Agent Reward
+          // 🎯 2nd level referrer reward (if the referrer was also referred)
           if (referrer.referred_by) {
             const secondLevelReferrer = await User.findByPk(referrer.referred_by);
-            if (secondLevelReferrer && secondLevelReferrer.agent) {
-              secondLevelReferrer.wallet_balance = (parseFloat(secondLevelReferrer.wallet_balance) || 0) + 5;
+            // FIX: use is_referrer (not .agent which doesn't exist)
+            if (secondLevelReferrer && secondLevelReferrer.is_referrer) {
+              const secondBonus = secondLevelReferrer.is_company ? 10 : 5;
+              secondLevelReferrer.wallet_balance = (parseFloat(secondLevelReferrer.wallet_balance) || 0) + secondBonus;
               await secondLevelReferrer.save();
-              console.log(`2nd level referrer (agent) ${secondLevelReferrer.id} rewarded with 5 ETB.`);
+              console.log(`2nd level referrer ${secondLevelReferrer.id} rewarded with ${secondBonus} ETB.`);
             }
           }
         }
@@ -128,10 +130,6 @@ const getAvailableOrders = async (req, res) => {
         payment_status: 'Pending Delivery Confirmation',
         delivery_id: null,
       },
-      include: [
-        { model: Shopper, as: 'Shopper', attributes: ['full_name', 'email'] }
-        // Add other associations if needed
-      ]
     });
 
     res.status(200).json({ data: availableOrders });
@@ -392,4 +390,45 @@ const getOrdersByReferralCode = async (req, res) => {
   }
 };
 
-module.exports = { createPayment, updatePaymentStatus, sendOrderToShopperAndDelivery, getOrderHistory, getOrdersByReferralCode, getAllOrders, getPaymentOrderById, assignOrderToNearbyDeliveries, getAvailableOrders, acceptDeliveryOrder };
+// ============================
+//  CANCEL ORDER (user cancels own pending order)
+// ============================
+const cancelOrder = async (req, res) => {
+  try {
+    const { payment_id } = req.params;
+    const payment = await Payment.findByPk(payment_id);
+
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+
+    // Only the owner (matching email or guest_id) can cancel
+    const isOwner = (req.user && payment.customer_email === req.user.email) ||
+                    (payment.guest_id && payment.guest_id === req.query.guest_id);
+
+    if (!isOwner) {
+      return res.status(403).json({ success: false, message: 'You can only cancel your own orders.' });
+    }
+
+    // Only Pending orders can be cancelled (before approval)
+    if (!['Pending', 'Pending Delivery', 'Pending Delivery Confirmation'].includes(payment.payment_status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel an order that is already ${payment.payment_status}.`,
+      });
+    }
+
+    await payment.update({ payment_status: 'Cancelled' });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Order cancelled successfully.',
+      payment,
+    });
+  } catch (error) {
+    console.error('Error cancelling order:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+module.exports = { createPayment, updatePaymentStatus, sendOrderToShopperAndDelivery, getOrderHistory, getOrdersByReferralCode, getAllOrders, getPaymentOrderById, assignOrderToNearbyDeliveries, getAvailableOrders, acceptDeliveryOrder, cancelOrder };

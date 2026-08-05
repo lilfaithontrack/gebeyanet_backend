@@ -1,5 +1,5 @@
 const express = require('express');
-const adminAuth = require('../middleware/adminAuth.js'); // Ensure the path is correct
+const adminAuth = require('../middlewares/adminMiddleware.js'); // Ensure the path is correct
 const { addShopOwner, getAllShopOwners, getShopOwnerById, updateShopOwner, deleteShopOwner, uploadIdFile } = require('../controllers/shopOwnerController.js');
 
 const router = express.Router();

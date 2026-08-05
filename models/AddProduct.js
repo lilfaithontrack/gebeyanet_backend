@@ -74,6 +74,19 @@ const Product = sequelize.define('Product', {
       isEmail: true
     }
   },
+  seller_level: {
+    type: DataTypes.ENUM('importer', 'exporter', 'reseller', 'admin'),
+    allowNull: true,
+    comment: 'Denormalized seller level for quick filtering',
+  },
+
+  // --- Product Type ---
+  product_type: {
+    type: DataTypes.ENUM('retail', 'wholesale', 'import', 'export'),
+    allowNull: false,
+    defaultValue: 'retail',
+    comment: 'Type of product: retail, wholesale, import, or export',
+  },
 
   // --- Purchase Limits ---
   min_order_qty: {
@@ -240,7 +253,19 @@ const Product = sequelize.define('Product', {
     type: DataTypes.FLOAT,
     allowNull: true,
     defaultValue: 10
-  }
+  },
+
+  // --- Import/Export specific ---
+  origin_country: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    comment: 'Country of origin (for import products)',
+  },
+  destination_country: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    comment: 'Destination country (for export products)',
+  },
 }, {
   tableName: 'products',
   timestamps: true,
