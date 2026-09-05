@@ -89,9 +89,25 @@ module.exports = {
       created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW },
       updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW },
     });
+
+    // ---- 5. withdraw_requests ----
+    // Created by the unified WithdrawRequest model. Idempotent: skipped if present.
+    await createTableIfMissing(queryInterface, 'withdraw_requests', {
+      id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
+      user_id: { type: Sequelize.INTEGER, allowNull: false },
+      amount: { type: Sequelize.FLOAT, allowNull: false, defaultValue: 1000 },
+      status: {
+        type: Sequelize.ENUM('Pending', 'Approved', 'Declined'),
+        allowNull: false,
+        defaultValue: 'Pending',
+      },
+      createdAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+      updatedAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+    });
   },
 
   down: async (queryInterface, Sequelize) => {
+    await queryInterface.dropTable('withdraw_requests');
     await queryInterface.dropTable('user_notifications');
     await queryInterface.changeColumn('checkouts', 'guest_id', {
       type: Sequelize.INTEGER,
@@ -134,5 +150,17 @@ async function dropColumnIfPresent(qi, table, column) {
     console.log(`  - ${table}.${column} dropped`);
   } else {
     console.log(`  = ${table}.${column} already absent, skipped`);
+  }
+}
+
+async function createTableIfMissing(qi, table, attributes) {
+  const [rows] = await qi.sequelize.query(
+    `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '${table}'`
+  );
+  if (rows.length === 0) {
+    await qi.createTable(table, attributes);
+    console.log(`  + table ${table} created`);
+  } else {
+    console.log(`  = table ${table} already exists, skipped`);
   }
 }

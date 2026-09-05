@@ -1,3 +1,8 @@
+// ============================================================================
+// @deprecated  Legacy shop-owner routes — NOT registered in server.js.
+// Shop owners are now unified into the `users` table (role='seller').
+// This file is kept only for historical reference and should NOT be re-registered.
+// ============================================================================
 const express = require('express');
 const adminAuth = require('../middlewares/adminMiddleware.js'); // Ensure the path is correct
 const { addShopOwner, getAllShopOwners, getShopOwnerById, updateShopOwner, deleteShopOwner, uploadIdFile } = require('../controllers/shopOwnerController.js');

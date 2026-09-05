@@ -10,3 +10,6 @@ _*.js
 
 # Uploads (runtime user content)
 uploads/screenshots/
+
+# Local DB backup snapshots (not part of the codebase)
+_backups/

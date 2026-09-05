@@ -245,22 +245,60 @@ const getUserById = async (req, res) => {
 
 // ============================
 //  GET ALL USERS (admin)
+//  Supports: role, seller_level, status, search, is_referrer, page, limit
+//  Returns: { success, users, totalCount, page, limit, totalPages, nextPage }
 // ============================
 const getAllUsers = async (req, res) => {
   try {
-    const { role } = req.query;
-    const where = {};
-    if (role) where.role = role;
+    const { role, seller_level, status, search, is_referrer } = req.query;
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 500);
+    const offset = (page - 1) * limit;
 
-    const users = await User.findAll({
+    const { Op } = require('sequelize');
+    const where = {};
+
+    if (role && role !== 'all') where.role = role;
+    if (seller_level && seller_level !== 'all') where.seller_level = seller_level;
+    if (status && status !== 'all') where.status = status;
+    if (is_referrer !== undefined && is_referrer !== 'all') {
+      where.is_referrer = is_referrer === 'true' || is_referrer === true;
+    }
+
+    // Free-text search across name / email / phone / referral_code
+    if (search && String(search).trim()) {
+      const term = `%${String(search).trim()}%`;
+      where[Op.or] = [
+        { full_name: { [Op.like]: term } },
+        { email: { [Op.like]: term } },
+        { phone: { [Op.like]: term } },
+        { referral_code: { [Op.like]: term } },
+      ];
+    }
+
+    const { rows: users, count: totalCount } = await User.findAndCountAll({
       where,
       attributes: { exclude: ['password'] },
       order: [['created_at', 'DESC']],
+      limit,
+      offset,
     });
-    res.status(200).json({ success: true, users });
+
+    const totalPages = Math.ceil(totalCount / limit) || 1;
+    const nextPage = page < totalPages ? page + 1 : null;
+
+    res.status(200).json({
+      success: true,
+      users,
+      totalCount,
+      page,
+      limit,
+      totalPages,
+      nextPage,
+    });
   } catch (error) {
     console.error('Error fetching users:', error);
-    res.status(500).json({ success: false, message: 'Internal server error.' });
+    res.status(500).json({ success: false, message: 'Internal server error.', error: error.message });
   }
 };
 

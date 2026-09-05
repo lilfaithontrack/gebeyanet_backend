@@ -95,18 +95,25 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 console.log('Serving static files from:', path.join(__dirname, 'uploads'));
 
 // ========================
-//  ADMIN PANEL (served by the backend itself)
+//  FRONTENDS (served by the backend itself)
 // ========================
-// The built admin UI lives in ./admin-panel (a copy of gebyanet_admin/dist).
-// It uses same-origin relative URLs (/api/..., /uploads/...), so when the
-// backend is running the admin panel is available at the same URL:
-//   http://localhost:PORT/  or  https://api.gebyanet.com/
-// No separate API call / CORS / dev server needed.
+// Main website: ./web-panel (a copy of gebyanet-web/dist) served at "/".
+// Admin UI:     ./admin-panel (a copy of gebyanet_admin/dist) served at "/admin".
+// The admin build is compiled with base "/admin/" and a router basename of
+// "/admin", so it works correctly when mounted under that path.
+const WEB_PANEL_DIR = path.join(__dirname, 'web-panel');
 const ADMIN_PANEL_DIR = path.join(__dirname, 'admin-panel');
+
+if (fs.existsSync(WEB_PANEL_DIR)) {
+  app.use(express.static(WEB_PANEL_DIR));
+  console.log('Serving website from:', WEB_PANEL_DIR);
+} else {
+  console.warn('Website build not found at', WEB_PANEL_DIR, '- website will not be served.');
+}
+
 if (fs.existsSync(ADMIN_PANEL_DIR)) {
-  // Serve admin static assets (js/css/images) at root
-  app.use(express.static(ADMIN_PANEL_DIR));
-  console.log('Serving admin panel from:', ADMIN_PANEL_DIR);
+  app.use('/admin', express.static(ADMIN_PANEL_DIR));
+  console.log('Serving admin panel from:', ADMIN_PANEL_DIR, 'at /admin');
 } else {
   console.warn('Admin panel build not found at', ADMIN_PANEL_DIR, '- admin UI will not be served.');
 }
@@ -159,14 +166,21 @@ app.use('/api', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// SPA fallback: any non-API, non-uploads GET request serves the admin panel
-// index.html so client-side routes (e.g. /login, /products) work on refresh.
+// SPA fallback: any non-API, non-uploads GET request serves the appropriate
+// index.html so client-side routes work on refresh.
+//   /admin/*  -> admin panel's index.html
+//   anything else -> main website's index.html
 app.get('*', (req, res, next) => {
   // Skip requests that look like files (have an extension)
   if (path.extname(req.path).length > 0) {
     return res.status(404).send('Not found');
   }
-  const indexFile = path.join(ADMIN_PANEL_DIR, 'index.html');
+
+  const isAdminRoute = req.path === '/admin' || req.path.startsWith('/admin/');
+  const indexFile = isAdminRoute
+    ? path.join(ADMIN_PANEL_DIR, 'index.html')
+    : path.join(WEB_PANEL_DIR, 'index.html');
+
   if (fs.existsSync(indexFile)) {
     return res.sendFile(indexFile);
   }

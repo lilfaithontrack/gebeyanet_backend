@@ -1,3 +1,9 @@
+// ============================================================================
+// @deprecated  Legacy seller routes — NOT registered in server.js.
+// Sellers are now unified into the `users` table (role='seller') and use
+// /api/user/* endpoints (see routes/userRoutes.js). This file is kept only
+// for historical reference and should NOT be re-registered.
+// ============================================================================
 const express = require('express');
 const { registerSeller, loginSeller, updateSeller, getSellerById, deleteSeller, forgotPassword, resetPassword, sendOtp, upload, verifyOtp, getAllSellers } = require('../controllers/sellerController.js');
 

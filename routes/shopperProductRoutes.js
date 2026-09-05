@@ -1,3 +1,9 @@
+// ============================================================================
+// @deprecated  Legacy shopper_products routes — NOT registered in server.js.
+// Products are now unified into the `products` table (models/AddProduct.js)
+// and use /api/prod/* endpoints (see routes/addProductRoutes.js).
+// This file is kept only for historical reference and should NOT be re-registered.
+// ============================================================================
 const express = require('express');
 const { createProduct, updateProduct, getAllPendingProducts, deleteProduct, getAllProducts, getAllApprovedProducts, getProductById, getProductsByLocation, getMyShopApprovedProducts, getMyShopPendingProducts, getAllMyProducts, getApprovedProductDetail, getMyShopProductById, upload, getAllProductDetailById } = require('../controllers/shopperProductController.js');
 const { verifyShopper } = require('../middlewares/verifyShopper.js');

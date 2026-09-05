@@ -1,3 +1,9 @@
+// ============================================================================
+// @deprecated  Legacy product routes — NOT registered in server.js.
+// Products are now managed via /api/prod/* (routes/addProductRoutes.js)
+// using the unified AddProduct model. This file is kept only for historical
+// reference and should NOT be re-registered.
+// ============================================================================
 // routes/productRoutes.js
 const express = require('express');
 const { addProduct, getAllProducts, getProductById, updateProduct, deleteProduct } = require('../controllers/productController.js'); // Adjust the path as necessary

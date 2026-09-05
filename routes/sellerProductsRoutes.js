@@ -1,3 +1,9 @@
+// ============================================================================
+// @deprecated  Legacy seller_products routes — NOT registered in server.js.
+// Products are now unified into the `products` table (models/AddProduct.js)
+// and use /api/prod/* endpoints (see routes/addProductRoutes.js).
+// This file is kept only for historical reference and should NOT be re-registered.
+// ============================================================================
 const express = require('express');
 const { createSellerProduct, approveSellerProduct, getSellerProducts, getPendingSellerProducts, deleteSellerProduct, updateSellerProduct, getApprovedSellerProducts, getApprovedSellerProductById, updateSellerProductStatus, getAllSellerProducts, upload } = require('../controllers/sellerProductController.js');
 

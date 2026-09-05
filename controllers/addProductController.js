@@ -268,17 +268,23 @@ const shuffleArray = (array) => {
 
 const getAllProducts = async (req, res) => {
   try {
-    const { subcat, product_type, seller_level, status } = req.query;
+    const { subcat, product_type, seller_level, status, seller_only } = req.query;
     const where = {};
 
     if (subcat) where.subcat = subcat;
     if (product_type) where.product_type = product_type;
     if (seller_level) where.seller_level = seller_level;
 
+    // seller_only=true -> only products submitted by real sellers (not admin-created)
+    if (seller_only === 'true' || seller_only === true) {
+      where.seller_level = { [require('sequelize').Op.ne]: 'admin' };
+    }
+
     // Default to approved only (for public browsing), but allow status filter
-    if (status) {
+    // status=all -> no status filter (admin use)
+    if (status && status !== 'all') {
       where.status = status;
-    } else {
+    } else if (!status) {
       where.status = 'approved';
     }
 
