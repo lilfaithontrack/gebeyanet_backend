@@ -251,8 +251,12 @@ const startServer = async () => {
     await seedConfig();
 
     // SSL configuration
-    const privKeyPath = '/etc/letsencrypt/live/backend.gebyanet.com/privkey.pem';
-    const fullChainPath = '/etc/letsencrypt/live/backend.gebyanet.com/fullchain.pem';
+    // SSL_DOMAIN lets the certbot folder name be set per-environment (it defaults
+    // to the folder certbot creates for the primary domain). SSL_KEY_PATH /
+    // SSL_CERT_PATH override the full paths directly if the layout differs.
+    const sslDomain = process.env.SSL_DOMAIN || 'gebeyanet.com';
+    const privKeyPath = process.env.SSL_KEY_PATH || `/etc/letsencrypt/live/${sslDomain}/privkey.pem`;
+    const fullChainPath = process.env.SSL_CERT_PATH || `/etc/letsencrypt/live/${sslDomain}/fullchain.pem`;
 
     if (fs.existsSync(privKeyPath) && fs.existsSync(fullChainPath)) {
       const sslOptions = {
@@ -264,7 +268,7 @@ const startServer = async () => {
         console.log(`HTTPS Server running on port ${PORT}`);
       });
     } else {
-      console.warn('SSL certificates not found. Falling back to HTTP for local development.');
+      console.warn(`SSL certificates not found at ${privKeyPath} / ${fullChainPath}. Falling back to HTTP.`);
       const PORT = process.env.PORT || 3000;
       app.listen(PORT, () => {
         console.log(`HTTP Server running on http://localhost:${PORT}`);
