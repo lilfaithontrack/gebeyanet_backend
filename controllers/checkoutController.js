@@ -15,6 +15,13 @@ const createCheckout = async (req, res) => {
     total_price,
     user_id,  // Optional
     cartItems,
+    delivery_fee,
+    is_delivery,
+    dropoff_lat,
+    dropoff_lng,
+    delivery_distance_km,
+    delivery_weight_kg,
+    guest_id: bodyGuestId,
   } = req.body;
 
   // Validate required fields
@@ -37,7 +44,13 @@ const createCheckout = async (req, res) => {
       payment_status: 'pending',
       order_status: 'pending',
       user_id: user_id || null,  // Optional user_id (set to null if not provided)
-      guest_id: uuidv4(),  // Generate a guest ID
+      guest_id: bodyGuestId || uuidv4(),  // Use provided guest ID or generate one
+      delivery_fee: delivery_fee || 0,
+      is_delivery: is_delivery !== undefined ? !!is_delivery : true,
+      dropoff_lat: dropoff_lat || null,
+      dropoff_lng: dropoff_lng || null,
+      delivery_distance_km: delivery_distance_km || null,
+      delivery_weight_kg: delivery_weight_kg || null,
       created_at: new Date(),
       updated_at: new Date(),
     }, { transaction: t });  // Include the transaction here

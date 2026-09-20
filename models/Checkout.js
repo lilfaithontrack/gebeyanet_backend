@@ -62,6 +62,32 @@ const Checkout = sequelize.define('Checkout', {
     type: DataTypes.STRING,
     allowNull: true, // Nullable for logged-in users
   },
+  delivery_fee: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+    defaultValue: 0,
+  },
+  is_delivery: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  },
+  dropoff_lat: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
+  dropoff_lng: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
+  delivery_distance_km: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
+  delivery_weight_kg: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
 }, {
   timestamps: true, // Automatically manage createdAt and updatedAt
   createdAt: 'created_at', // Specify the column name for createdAt
