@@ -59,6 +59,7 @@ const createProduct = async (req, res) => {
       general_image_count,
       location_name, coordinates: coordinatesJSON, location_radius,
       min_order_qty, max_order_qty, sell_unit,
+      weight_kg,
     } = req.body;
 
     // Validate product_type against seller_level
@@ -117,6 +118,7 @@ const createProduct = async (req, res) => {
       min_order_qty: min_order_qty || 1,
       max_order_qty: max_order_qty || null,
       sell_unit: sell_unit || 'piece',
+      weight_kg: weight_kg || 0,
       status: 'pending',
       image: generalImages,
       color_options: color_options_data,

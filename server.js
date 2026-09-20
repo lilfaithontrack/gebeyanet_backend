@@ -33,6 +33,7 @@ const checkoutRoutes = require('./routes/checkoutRoutes.js');
 const receiptRoutes = require('./routes/receiptRoutes.js');
 const notificationRoutes = require('./routes/notificationRoutes.js');
 const deliveryFeeRoutes = require('./routes/deliveryFeeRoutes.js');
+const deliveryPricingRoutes = require('./routes/deliveryPricingRoutes.js');
 const { seedConfig } = require('./controllers/deliveryFeeModelAndController.js');
 const paymentRoutes = require('./routes/paymentRoutes.js');
 
@@ -147,6 +148,7 @@ app.use('/api/shoppers', shopperRoutes);      // Alias for admin panel compatibi
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/deliveryboy', deliveryBoyRoutes);
 app.use('/api/deliveryFee', deliveryFeeRoutes);
+app.use('/api/delivery-pricing', deliveryPricingRoutes);
 app.use('/api/assign', assignOrderRoutes);
 app.use('/api/telalaki', telalakiRoutes);
 app.use('/api/vehicle-files', vehicleFilesRoutes);

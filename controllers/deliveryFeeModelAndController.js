@@ -34,12 +34,12 @@ const DeliveryFeeSetting = sequelize.define('DeliveryFeeSetting', {
   pickup_lat: {
     type: DataTypes.FLOAT,
     allowNull: false,
-    defaultValue: 9.0306, // Default: Figa, Addis Ababa
+    defaultValue: 9.0408, // Default: Kotebe, Addis Ababa
   },
   pickup_lng: {
     type: DataTypes.FLOAT,
     allowNull: false,
-    defaultValue: 38.7613,
+    defaultValue: 38.8347,
   },
 }, {
   tableName: 'DeliveryFeeSettings',

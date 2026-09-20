@@ -50,7 +50,7 @@ const seedConfig = async () => {
 seedConfig();
 
 // ---------- 2. HELPERS ----------
-const FIGA_LOCATION = { lat: 9.0306, lng: 38.7613 };
+const FIGA_LOCATION = { lat: 9.0408, lng: 38.8347 }; // Kotebe, Addis Ababa
 
 function calculateDistanceKm(lat1, lon1, lat2, lon2) {
   const toRad = deg => (deg * Math.PI) / 180;

@@ -108,6 +108,13 @@ const Product = sequelize.define('Product', {
     defaultValue: 'piece',
     comment: 'Unit of sale for this product',
   },
+  weight_kg: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+    defaultValue: 0,
+    validate: { min: 0 },
+    comment: 'Weight of a single unit in kg (used for delivery fee calculation)',
+  },
   unit_of_measurement: {
     type: DataTypes.STRING(50),
     allowNull: true,
