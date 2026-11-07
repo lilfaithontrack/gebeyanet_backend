@@ -246,7 +246,7 @@ const startServer = async () => {
     });
 
     // Sync database models
-    await sequelize.sync({ alter: false });
+    await sequelize.sync({ alter: { drop: false } });
     console.log('Database synchronized successfully.');
 
     // Seed delivery fee config after tables are created
