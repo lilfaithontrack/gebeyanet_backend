@@ -21,9 +21,13 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png/;
-    const isValid = allowedTypes.test(path.extname(file.originalname).toLowerCase()) && allowedTypes.test(file.mimetype);
-    isValid ? cb(null, true) : cb(new Error('Only jpeg, jpg, or png images are allowed.'));
+    const allowedExt = /\.(jpe?g|png)$/i;
+    // Check extension only — Android XHR may send application/octet-stream as mimetype
+    if (allowedExt.test(file.originalname)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only jpeg, jpg, or png images are allowed.'));
+    }
   },
 }).single('payment_screenshot');
 
