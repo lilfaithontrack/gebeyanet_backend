@@ -7,20 +7,6 @@ const Cart = sequelize.define('Cart', {
     primaryKey: true,
     autoIncrement: true,
   },
-  checkout_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    references: { model: 'checkouts', key: 'id' },
-  },
-  product_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-  },
-  quantity: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    defaultValue: 1,
-  },
   title: {
     type: DataTypes.TEXT,
     allowNull: true,
@@ -30,7 +16,7 @@ const Cart = sequelize.define('Cart', {
     allowNull: true,
   },
   price: {
-    type: DataTypes.FLOAT,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   userId: {
