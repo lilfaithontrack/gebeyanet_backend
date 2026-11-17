@@ -1,50 +1,58 @@
 const jwt = require('jsonwebtoken');
-const Admin = require('../models/Admin.js'); // Ensure the path is correct
+const Admin = require('../models/Admin.js');
+
+const ADMIN_ROLES = ['superadmin', 'admin', 'manager'];
 
 const adminAuth = async (req, res, next) => {
   try {
-    // Get token from the headers
-    const token = req.header('Authorization').replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'No token provided, authorization denied.',
-      });
+    const authHeader = req.header('Authorization');
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: 'No token provided.' });
     }
+    const token = authHeader.replace('Bearer ', '');
 
-    // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Find the admin by ID
     const admin = await Admin.findByPk(decoded.id);
 
     if (!admin) {
-      return res.status(401).json({
-        success: false,
-        message: 'Admin not found, authorization denied.',
-      });
+      return res.status(401).json({ success: false, message: 'Admin not found.' });
     }
 
-    // Check if the user has an admin role
-    if (admin.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. You are not authorized to access this resource.',
-      });
+    if (!ADMIN_ROLES.includes(admin.role)) {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
-    // Attach admin information to request
     req.admin = admin;
-
-    // Proceed to the next middleware or route handler
     next();
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Invalid token, authorization denied.',
-    });
+    res.status(401).json({ success: false, message: 'Invalid token.' });
+  }
+};
+
+// Restrict to specific roles — usage: requireRole('superadmin', 'admin')
+const requireRole = (...roles) => async (req, res, next) => {
+  try {
+    const authHeader = req.header('Authorization');
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: 'No token provided.' });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const admin = await Admin.findByPk(decoded.id);
+
+    if (!admin || !roles.includes(admin.role)) {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. Requires role: ${roles.join(' or ')}.`,
+      });
+    }
+
+    req.admin = admin;
+    next();
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'Invalid token.' });
   }
 };
 
 module.exports = adminAuth;
+module.exports.requireRole = requireRole;
