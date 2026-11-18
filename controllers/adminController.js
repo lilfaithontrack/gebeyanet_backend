@@ -61,18 +61,21 @@ const loginAdmin = async (req, res) => {
           expiresIn: '1h',
         });
   
+        const adminData = {
+          id: admin.id,
+          name: admin.name,
+          email: admin.email,
+          image: admin.image,
+          role: admin.role,
+        };
         return res.status(200).json({
           success: true,
           token,
-          data: {
-            id: admin.id,
-            name: admin.name,
-            email: admin.email,
-            image: admin.image,
-          },
+          admin: adminData,
+          data: adminData,
         });
       }
-  
+
       // If the password is hashed, compare using bcrypt
       const isMatch = await bcrypt.compare(password, admin.password);
       if (!isMatch) {
@@ -81,21 +84,24 @@ const loginAdmin = async (req, res) => {
           message: 'Invalid email or password.',
         });
       }
-  
+
       // Generate JWT token
       const token = jwt.sign({ id: admin.id }, process.env.JWT_SECRET, {
         expiresIn: '1h',
       });
-  
+
+      const adminData = {
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+        image: admin.image,
+        role: admin.role,
+      };
       res.status(200).json({
         success: true,
         token,
-        data: {
-          id: admin.id,
-          name: admin.name,
-          email: admin.email,
-          image: admin.image,
-        },
+        admin: adminData,
+        data: adminData,
       });
     } catch (error) {
       res.status(500).json({
@@ -175,7 +181,7 @@ const getAdminById = async (req, res) => {
 // Update admin details
 const updateAdmin = async (req, res) => {
   try {
-    const { name, email, password, image } = req.body;
+    const { name, email, password, image, role } = req.body;
 
     const admin = await Admin.findByPk(req.params.id);
     if (!admin) {
@@ -190,6 +196,7 @@ const updateAdmin = async (req, res) => {
       email: email || admin.email,
       password: password ? await bcrypt.hash(password, 10) : admin.password,
       image: image || admin.image,
+      ...(role && { role }),
     });
 
     res.status(200).json({

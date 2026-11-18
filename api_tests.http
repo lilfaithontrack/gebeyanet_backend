@@ -1,0 +1,1085 @@
+### ============================================================
+### GEBYA NET — Full Backend API Test Suite
+### Base URL: http://localhost:3000
+### VS Code: install "REST Client" extension, then click "Send Request"
+### ============================================================
+
+@base = http://localhost:3000
+@adminToken = REPLACE_WITH_ADMIN_TOKEN
+@userToken  = REPLACE_WITH_USER_TOKEN
+@adminEmail = admin@gebyanet.com
+@adminPass  = GebyaAdmin2026!
+
+
+# ============================================================
+# 1. ADMIN AUTH  (/api/admin)
+# ============================================================
+
+### 1.1 Register admin (superadmin creates another admin)
+POST {{base}}/api/admin/register
+Content-Type: application/json
+
+{
+  "name": "Test Admin",
+  "email": "testadmin@gebyanet.com",
+  "password": "TestAdmin123!",
+  "role": "admin"
+}
+
+###
+
+### 1.2 Admin Login  ← run this first, copy token into @adminToken above
+POST {{base}}/api/admin/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPass}}"
+}
+
+###
+
+### 1.3 Get all admins
+GET {{base}}/api/admin
+Authorization: Bearer {{adminToken}}
+
+###
+
+### 1.4 Get admin by ID
+GET {{base}}/api/admin/1
+Authorization: Bearer {{adminToken}}
+
+###
+
+### 1.5 Update admin
+PUT {{base}}/api/admin/1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Admin Name"
+}
+
+###
+
+
+# ============================================================
+# 2. USER / SELLER AUTH  (/api/user)
+# ============================================================
+
+### 2.1 Register new user (buyer)
+POST {{base}}/api/user/register
+Content-Type: application/json
+
+{
+  "full_name": "Test Buyer",
+  "email": "buyer@testgebya.com",
+  "phone": "0911000001",
+  "password": "Buyer123!",
+  "role": "buyer"
+}
+
+###
+
+### 2.2 Register new seller
+POST {{base}}/api/user/register
+Content-Type: application/json
+
+{
+  "full_name": "Test Seller",
+  "email": "seller@testgebya.com",
+  "phone": "0911000002",
+  "password": "Seller123!",
+  "role": "seller"
+}
+
+###
+
+### 2.3 User Login  ← run this, copy token into @userToken above
+POST {{base}}/api/user/login
+Content-Type: application/json
+
+{
+  "email": "seller@testgebya.com",
+  "password": "Seller123!"
+}
+
+###
+
+### 2.4 Get my profile (authenticated user)
+GET {{base}}/api/user/profile
+Authorization: Bearer {{userToken}}
+
+###
+
+### 2.5 Get all users (admin)
+GET {{base}}/api/user
+Authorization: Bearer {{adminToken}}
+
+###
+
+### 2.6 Get user by ID (admin)
+GET {{base}}/api/user/1
+Authorization: Bearer {{adminToken}}
+
+###
+
+### 2.7 Update user status (admin)
+PUT {{base}}/api/user/1/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "active"
+}
+
+###
+
+### 2.8 Upgrade to seller
+POST {{base}}/api/user/upgrade-to-seller
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "seller_level": "reseller",
+  "business_name": "My Test Shop"
+}
+
+###
+
+### 2.9 Get referral stats (authenticated seller)
+GET {{base}}/api/user/referral/stats
+Authorization: Bearer {{userToken}}
+
+###
+
+### 2.10 Get admin referral stats
+GET {{base}}/api/user/referral/admin-stats
+Authorization: Bearer {{adminToken}}
+
+###
+
+### 2.11 Send OTP
+POST {{base}}/api/user/send-otp
+Content-Type: application/json
+
+{
+  "email": "buyer@testgebya.com"
+}
+
+###
+
+### 2.12 Forgot password
+POST {{base}}/api/user/forgot-password
+Content-Type: application/json
+
+{
+  "email": "buyer@testgebya.com"
+}
+
+###
+
+
+# ============================================================
+# 3. PRODUCTS  (/api/prod)
+# ============================================================
+
+### 3.1 Get all products (public)
+GET {{base}}/api/prod
+
+###
+
+### 3.2 Get product by ID
+GET {{base}}/api/prod/1
+
+###
+
+### 3.3 Get products by location
+GET {{base}}/api/prod/location?lat=9.0300&lng=38.7400&radius=10
+
+###
+
+### 3.4 Get my products (seller)
+GET {{base}}/api/prod/my-products
+Authorization: Bearer {{userToken}}
+
+###
+
+### 3.5 Create product (seller — JSON body, no file)
+POST {{base}}/api/prod
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "title": "Test Product",
+  "price": 150.00,
+  "description": "A test product for API validation",
+  "brand": "TestBrand",
+  "catItems": "Electronics",
+  "subcat": "Phones",
+  "product_type": "reseller",
+  "origin_country": "Ethiopia",
+  "stock": "in_stock",
+  "sell_unit": "piece",
+  "min_order_qty": 1,
+  "weight_kg": 0.5
+}
+
+###
+
+### 3.6 Update product (seller/admin)
+PUT {{base}}/api/prod/1
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "price": 175.00,
+  "description": "Updated description"
+}
+
+###
+
+### 3.7 Approve / reject product (admin)
+PUT {{base}}/api/prod/1/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "approved"
+}
+
+###
+
+### 3.8 Delete product (seller/admin)
+DELETE {{base}}/api/prod/1
+Authorization: Bearer {{userToken}}
+
+###
+
+
+# ============================================================
+# 4. CATEGORIES  (/api/category, /api/subcat, /api/catitem)
+# ============================================================
+
+### 4.1 Get all categories (public)
+GET {{base}}/api/category
+
+###
+
+### 4.2 Create category (admin)
+POST {{base}}/api/category/create
+Content-Type: application/json
+
+{
+  "name": "Electronics",
+  "description": "Electronic devices and accessories",
+  "image": ""
+}
+
+###
+
+### 4.3 Get category by ID
+GET {{base}}/api/category/1
+
+###
+
+### 4.4 Update category (admin)
+PUT {{base}}/api/category/1
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Electronics & Gadgets"
+}
+
+###
+
+### 4.5 Delete category (admin)
+DELETE {{base}}/api/category/1
+Authorization: Bearer {{adminToken}}
+
+###
+
+### 4.6 Get all subcategories
+GET {{base}}/api/subcat
+
+###
+
+### 4.7 Create subcategory
+POST {{base}}/api/subcat/Create
+Content-Type: application/json
+
+{
+  "name": "Smartphones",
+  "category_id": 1
+}
+
+###
+
+### 4.8 Get all category items
+GET {{base}}/api/catitem
+
+###
+
+### 4.9 Create category item
+POST {{base}}/api/catitem/create
+Content-Type: application/json
+
+{
+  "name": "iPhone",
+  "subcat_id": 1
+}
+
+###
+
+
+# ============================================================
+# 5. UOM (Unit of Measure)  (/api/uoms)
+# ============================================================
+
+### 5.1 Get UOMs for a product
+GET {{base}}/api/uoms/1
+
+###
+
+### 5.2 Create UOM
+POST {{base}}/api/uoms
+Content-Type: application/json
+
+{
+  "product_id": 1,
+  "unit_name": "piece",
+  "price": 150.00,
+  "min_order": 1
+}
+
+###
+
+### 5.3 Update UOM
+PUT {{base}}/api/uoms/1
+Content-Type: application/json
+
+{
+  "price": 160.00
+}
+
+###
+
+### 5.4 Delete UOM
+DELETE {{base}}/api/uoms/1
+
+###
+
+
+# ============================================================
+# 6. CART  (/api/cart)
+# ============================================================
+
+### 6.1 Add item to cart
+POST {{base}}/api/cart/add-item
+Content-Type: application/json
+
+{
+  "user_id": 1,
+  "product_id": 1,
+  "quantity": 2,
+  "price": 150.00
+}
+
+###
+
+### 6.2 Get all cart items
+GET {{base}}/api/cart/cart-items
+
+###
+
+### 6.3 Get cart item by ID
+GET {{base}}/api/cart/cart-items/1
+
+###
+
+### 6.4 Delete cart item
+DELETE {{base}}/api/cart/cart-items/1
+
+###
+
+
+# ============================================================
+# 7. ORDERS  (/api/order)
+# ============================================================
+
+### 7.1 Create order
+POST {{base}}/api/order/create
+Content-Type: application/json
+
+{
+  "user_id": 1,
+  "items": [{"product_id": 1, "quantity": 2, "price": 150.00}],
+  "total": 300.00,
+  "delivery_address": "Addis Ababa, Bole"
+}
+
+###
+
+### 7.2 Get order by ID
+GET {{base}}/api/order/order/1
+
+###
+
+### 7.3 Get all orders for a user
+GET {{base}}/api/order/orders/user/1
+
+###
+
+### 7.4 Process payment for order
+POST {{base}}/api/order/payment
+Content-Type: application/json
+
+{
+  "order_id": 1,
+  "payment_method": "cash"
+}
+
+###
+
+### 7.5 Delete order
+DELETE {{base}}/api/order/order/1
+
+###
+
+
+# ============================================================
+# 8. PAYMENTS  (/api/payments)
+# ============================================================
+
+### 8.1 Create payment
+POST {{base}}/api/payments/create
+Content-Type: application/json
+
+{
+  "shopper_id": 1,
+  "total_price": 300.00,
+  "delivery_address": "Addis Ababa, Bole",
+  "items": [{"product_id": 1, "quantity": 2, "price": 150.00}],
+  "lat": 9.0300,
+  "lng": 38.7400
+}
+
+###
+
+### 8.2 Get available orders (delivery boys)
+GET {{base}}/api/payments/available
+
+###
+
+### 8.3 Get all orders (admin)
+GET {{base}}/api/payments/orders
+
+###
+
+### 8.4 Get order by payment ID
+GET {{base}}/api/payments/orders/1
+
+###
+
+### 8.5 Get order history
+GET {{base}}/api/payments/orders/history
+
+###
+
+### 8.6 Update payment status
+PUT {{base}}/api/payments/update-status/1
+Content-Type: application/json
+
+{
+  "status": "confirmed"
+}
+
+###
+
+### 8.7 Cancel order (user)
+PUT {{base}}/api/payments/cancel/1
+Authorization: Bearer {{userToken}}
+
+###
+
+### 8.8 Assign nearby delivery
+POST {{base}}/api/payments/assign-nearby/1
+Content-Type: application/json
+
+{}
+
+###
+
+
+# ============================================================
+# 9. CHECKOUT  (/api/checkout)
+# ============================================================
+
+### 9.1 Create checkout
+POST {{base}}/api/checkout/create
+Content-Type: application/json
+
+{
+  "user_id": 1,
+  "payment_id": 1,
+  "delivery_address": "Addis Ababa, Bole",
+  "total": 300.00
+}
+
+###
+
+### 9.2 Get checkout by ID
+GET {{base}}/api/checkout/1
+
+###
+
+
+# ============================================================
+# 10. RECEIPTS  (/api/receipt)
+# ============================================================
+
+### 10.1 Create receipt
+POST {{base}}/api/receipt/receipt
+Content-Type: application/json
+
+{
+  "payment_id": 1,
+  "user_id": 1,
+  "total": 300.00
+}
+
+###
+
+### 10.2 Get all receipts (admin)
+GET {{base}}/api/receipt/receipt
+Authorization: Bearer {{adminToken}}
+
+###
+
+### 10.3 Get receipt by ID
+GET {{base}}/api/receipt/receipt/1
+
+###
+
+### 10.4 Update receipt
+PUT {{base}}/api/receipt/receipt/1
+Content-Type: application/json
+
+{
+  "status": "printed"
+}
+
+###
+
+### 10.5 Delete receipt
+DELETE {{base}}/api/receipt/receipt/1
+
+###
+
+
+# ============================================================
+# 11. DELIVERY BOYS  (/api/deliveryboy)
+# ============================================================
+
+### 11.1 Get all delivery boys
+GET {{base}}/api/deliveryboy
+
+###
+
+### 11.2 Create / register delivery boy
+POST {{base}}/api/deliveryboy
+Content-Type: application/json
+
+{
+  "name": "Test Driver",
+  "phone": "0911000099",
+  "email": "driver@testgebya.com",
+  "password": "Driver123!",
+  "vehicle_type": "motorcycle",
+  "lat": 9.0300,
+  "lng": 38.7400
+}
+
+###
+
+### 11.3 Delivery boy login
+POST {{base}}/api/deliveryboy/login
+Content-Type: application/json
+
+{
+  "email": "driver@testgebya.com",
+  "password": "Driver123!"
+}
+
+###
+
+### 11.4 Get delivery boy by ID
+GET {{base}}/api/deliveryboy/1
+
+###
+
+### 11.5 Update delivery boy
+PUT {{base}}/api/deliveryboy/1
+Content-Type: application/json
+
+{
+  "lat": 9.0350,
+  "lng": 38.7450
+}
+
+###
+
+### 11.6 Delete delivery boy
+DELETE {{base}}/api/deliveryboy/1
+
+###
+
+
+# ============================================================
+# 12. ASSIGN ORDERS  (/api/assign)
+# ============================================================
+
+### 12.1 Get all assigned orders
+GET {{base}}/api/assign/assigned-orders
+
+###
+
+### 12.2 Assign order to shopper and delivery
+POST {{base}}/api/assign/assign
+Content-Type: application/json
+
+{
+  "payment_id": 1,
+  "shopper_id": 1,
+  "delivery_boy_id": 1
+}
+
+###
+
+### 12.3 Get assigned order by payment ID
+GET {{base}}/api/assign/assigned-orders/1
+
+###
+
+### 12.4 Update order status
+PUT {{base}}/api/assign/assigned-orders/1/status
+Content-Type: application/json
+
+{
+  "status": "delivered"
+}
+
+###
+
+### 12.5 Get orders for a shopper
+GET {{base}}/api/assign/assigned-orders/shopper/1
+
+###
+
+### 12.6 Get orders for a delivery boy
+GET {{base}}/api/assign/assigned-orders/deliveryboy/1
+
+###
+
+### 12.7 Delete assigned order
+DELETE {{base}}/api/assign/assigned-orders/1
+
+###
+
+
+# ============================================================
+# 13. DELIVERY FEE  (/api/deliveryFee, /api/delivery-pricing)
+# ============================================================
+
+### 13.1 Calculate delivery fee (standard — dropoff coords + weight + quantity)
+POST {{base}}/api/deliveryFee/delivery-fee/calculate-fee
+Content-Type: application/json
+
+{
+  "dropoff_lat": 9.00,
+  "dropoff_lng": 38.70,
+  "weight_kg": 10,
+  "quantity": 2
+}
+
+###
+
+### 13.2 Update fee config (admin)
+PUT {{base}}/api/deliveryFee/delivery-fee/update-fee-config
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "startup_fee": 150,
+  "per_km_fee": 15,
+  "per_quantity_fee": 5
+}
+
+###
+
+### 13.3 Calculate delivery pricing (telalaki / heavy goods — by weight + dropoff coords)
+POST {{base}}/api/delivery-pricing/calculate
+Content-Type: application/json
+
+{
+  "weight_kg": 200,
+  "dropoff_lat": 9.00,
+  "dropoff_lng": 38.70
+}
+
+###
+
+### 13.4 Calculate from cart
+POST {{base}}/api/delivery-pricing/calculate-from-cart
+Content-Type: application/json
+
+{
+  "cart_items": [{"product_id": 1, "quantity": 2, "weight_kg": 1.5}],
+  "distance_km": 10
+}
+
+###
+
+### 13.5 Get pricing matrix (public)
+GET {{base}}/api/delivery-pricing/matrix
+
+###
+
+###
+
+
+# ============================================================
+# 14. SHOPS  (/api/shop)
+# ============================================================
+
+### 14.1 Get all shops
+GET {{base}}/api/shop
+
+###
+
+### 14.2 Register shop
+POST {{base}}/api/shop/register
+Content-Type: application/json
+
+{
+  "name": "Test Shop",
+  "owner_name": "Shop Owner",
+  "phone": "0911000011",
+  "lat": 9.0300,
+  "lng": 38.7400,
+  "address": "Addis Ababa, Bole"
+}
+
+###
+
+### 14.3 Get nearby shops (use latitude/longitude — not lat/lng)
+GET {{base}}/api/shop/nearby?latitude=9.0300&longitude=38.7400&radius=5
+
+###
+
+### 14.4 Get shop by ID
+GET {{base}}/api/shop/1
+
+###
+
+### 14.5 Update shop
+PUT {{base}}/api/shop/1
+Content-Type: application/json
+
+{
+  "name": "Updated Shop Name"
+}
+
+###
+
+### 14.6 Delete shop
+DELETE {{base}}/api/shop/1
+
+###
+
+
+# ============================================================
+# 15. SHOPPERS  (/api/shopper)
+# ============================================================
+
+### 15.1 Get all shoppers
+GET {{base}}/api/shopper
+
+###
+
+### 15.2 Create shopper
+POST {{base}}/api/shopper
+Content-Type: application/json
+
+{
+  "name": "Test Shopper",
+  "phone": "0911000022",
+  "email": "shopper@testgebya.com",
+  "password": "Shopper123!",
+  "lat": 9.0300,
+  "lng": 38.7400
+}
+
+###
+
+### 15.3 Shopper login
+POST {{base}}/api/shopper/login
+Content-Type: application/json
+
+{
+  "email": "shopper@testgebya.com",
+  "password": "Shopper123!"
+}
+
+###
+
+### 15.4 Get nearby shoppers
+GET {{base}}/api/shopper/nearby?lat=9.0300&lng=38.7400&radius=5
+
+###
+
+### 15.5 Get shopper by ID
+GET {{base}}/api/shopper/1
+
+###
+
+### 15.6 Update shopper
+PUT {{base}}/api/shopper/1
+Content-Type: application/json
+
+{
+  "name": "Updated Shopper"
+}
+
+###
+
+### 15.7 Delete shopper
+DELETE {{base}}/api/shopper/1
+
+###
+
+### 15.8 Get shopper payment accounts
+GET {{base}}/api/shopper/payment-accounts
+
+###
+
+
+# ============================================================
+# 16. WALLET & WITHDRAWALS  (/api/withdraw)
+# ============================================================
+
+### 16.1 Seller requests withdrawal
+POST {{base}}/api/withdraw/request
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "amount": 500
+}
+
+###
+
+### 16.2 Seller views own withdrawals
+GET {{base}}/api/withdraw/my
+Authorization: Bearer {{userToken}}
+
+###
+
+### 16.3 Admin views all withdrawals
+GET {{base}}/api/withdraw
+Authorization: Bearer {{adminToken}}
+
+###
+
+### 16.4 Admin approves withdrawal
+PUT {{base}}/api/withdraw/1/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "Approved"
+}
+
+###
+
+### 16.5 Admin rejects withdrawal
+PUT {{base}}/api/withdraw/1/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "Rejected"
+}
+
+###
+
+
+# ============================================================
+# 17. NOTIFICATIONS  (/api/notifications)
+# ============================================================
+
+### 17.1 Create notification
+POST {{base}}/api/notifications/create
+Content-Type: application/json
+
+{
+  "user_id": 1,
+  "title": "Test Notification",
+  "message": "This is a test notification",
+  "type": "order"
+}
+
+###
+
+### 17.2 Get all notifications (requires user_id query param)
+GET {{base}}/api/notifications/notifications?user_id=1
+
+###
+
+### 17.3 Get my notifications (authenticated)
+GET {{base}}/api/notifications/my
+Authorization: Bearer {{userToken}}
+
+###
+
+### 17.4 Mark notification as read
+PUT {{base}}/api/notifications/my/1/read
+Authorization: Bearer {{userToken}}
+
+###
+
+### 17.5 Mark all notifications as read
+PUT {{base}}/api/notifications/my/read-all
+Authorization: Bearer {{userToken}}
+
+###
+
+
+# ============================================================
+# 18. CHAT  (/api/chat)
+# ============================================================
+
+### 18.1 Send message
+POST {{base}}/api/chat/send
+Content-Type: application/json
+
+{
+  "sender_id": 1,
+  "sender_role": "buyer",
+  "receiver_id": 2,
+  "receiver_role": "seller",
+  "message": "Hello, is this product available?"
+}
+
+###
+
+### 18.2 Get chat history
+GET {{base}}/api/chat/history/1/buyer/2/seller
+
+###
+
+### 18.3 Get unread messages for user
+GET {{base}}/api/chat/unread/1
+
+###
+
+### 18.4 Mark message as read
+PUT {{base}}/api/chat/mark-as-read/1
+
+###
+
+### 18.5 Delete message
+DELETE {{base}}/api/chat/delete/1
+
+###
+
+
+# ============================================================
+# 19. TELALAKI  (/api/telalaki)
+# ============================================================
+
+### 19.1 Register sender (heavy delivery client)
+POST {{base}}/api/telalaki/auth/register/sender
+Content-Type: application/json
+
+{
+  "name": "Test Sender",
+  "phone": "0911000033",
+  "email": "sender@testgebya.com",
+  "password": "Sender123!"
+}
+
+###
+
+### 19.2 Sender login
+POST {{base}}/api/telalaki/auth/login/sender
+Content-Type: application/json
+
+{
+  "email": "sender@testgebya.com",
+  "password": "Sender123!"
+}
+
+###
+
+### 19.3 Register driver
+POST {{base}}/api/telalaki/auth/register/driver
+Content-Type: application/json
+
+{
+  "name": "Test Heavy Driver",
+  "phone": "0911000044",
+  "email": "heavydriver@testgebya.com",
+  "password": "Driver123!",
+  "vehicle_type": "truck"
+}
+
+###
+
+### 19.4 Driver login
+POST {{base}}/api/telalaki/auth/login/driver
+Content-Type: application/json
+
+{
+  "email": "heavydriver@testgebya.com",
+  "password": "Driver123!"
+}
+
+###
+
+### 19.5 Get all delivery requests (admin)
+GET {{base}}/api/telalaki/admin/deliveries
+
+###
+
+### 19.6 Get pricing
+GET {{base}}/api/telalaki/pricing
+
+###
+
+### 19.7 Set pricing (admin)
+PUT {{base}}/api/telalaki/pricing
+Content-Type: application/json
+
+{
+  "price_per_km": 15,
+  "base_fee": 100
+}
+
+###
+
+
+# ============================================================
+# 20. HEALTH CHECK
+# ============================================================
+
+### 20.1 Verify API base responds (should return 404 JSON for /api)
+GET {{base}}/api/health-check
+
+###
+
+### 20.2 Confirm static admin panel is served
+GET {{base}}/admin
+
+###
